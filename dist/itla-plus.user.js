@@ -4,7 +4,7 @@
 // @version      1.2.0-beta
 // @description  Suite modular de herramientas para mejorar la experiencia en la plataforma virtual del ITLA.
 // @author       JosueIsOffline
-// @match        https://plataformavirtual.itla.edu.do/*
+// @match        https://aulavirtual.itla.edu.do/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getResourceText
@@ -108,7 +108,7 @@
             }
             return button;
         }
-        static isOnPage(urlPattern = "https://plataformavirtual.itla.edu.do/") {
+        static isOnPage(urlPattern = "https://aulavirtual.itla.edu.do/") {
             const pattern = urlPattern.replace(/\*/g, ".*").replace(/\?/g, "\\?");
             const regex = new RegExp(pattern);
             return regex.test(window.location.href);
@@ -252,7 +252,7 @@
         name = "AutoLogin";
         storage = new MonkeyStorage();
         shouldRun() {
-            return DOM.isOnPage("https://plataformavirtual.itla.edu.do/login/*");
+            return DOM.isOnPage("https://aulavirtual.itla.edu.do/login/*");
         }
         async init() {
             const creds = await this.asycAskCredentials();
@@ -298,7 +298,7 @@
             }
             const userInput = DOM.getInput("username");
             const passInput = DOM.getInput("password");
-            const loginBtn = DOM.getButton("Log in");
+            const loginBtn = DOM.getButton("loginbtn");
             if (userInput && passInput && loginBtn) {
                 DOM.fillInput(userInput, user);
                 DOM.fillInput(passInput, pass);
@@ -312,7 +312,7 @@
     class ExportAssignments {
         name = "ExportAssignments";
         token;
-        url = "https://plataformavirtual.itla.edu.do/calendar/view.php?view=upcoming";
+        url = "https://aulavirtual.itla.edu.do/calendar/view.php?view=upcoming";
         storage = new MonkeyStorage();
         exported = [];
         constructor(token) {
@@ -483,7 +483,7 @@
         name = "CoursePointsTracker";
         url = "";
         shouldRun() {
-            return DOM.isOnPage("https://plataformavirtual.itla.edu.do/course/view.php?id=*");
+            return DOM.isOnPage("https://aulavirtual.itla.edu.do/course/view.php?id=*");
         }
         async init() {
             const grades = await this.getGrades();
@@ -491,7 +491,7 @@
         }
         async getGrades() {
             try {
-                const url = await DOM.waitForElement(".list-group [data-key='grades']");
+                const url = await DOM.waitForElement('[data-key="grades"] a');
                 if (!url) {
                     console.warn(`[${this.name}] No subject selected`);
                     return 0;
@@ -503,7 +503,8 @@
                 const grades = Array.from(doc.querySelectorAll(".user-grade .column-grade"));
                 let total = 0;
                 for (let grade of grades) {
-                    const absoluteGrade = parseFloat(grade.innerText);
+                    const gradeText = grade.innerText.trim().replace(',', '.');
+                    const absoluteGrade = parseFloat(gradeText);
                     if (!isNaN(absoluteGrade) && absoluteGrade <= 20) {
                         total += absoluteGrade;
                     }

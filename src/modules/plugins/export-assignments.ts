@@ -6,7 +6,7 @@ export class ExportAssignments implements Plugin {
   name = "ExportAssignments";
   private token: string | null;
   private url: string =
-    "https://plataformavirtual.itla.edu.do/calendar/view.php?view=upcoming";
+    "https://aulavirtual.itla.edu.do/calendar/view.php?view=upcoming";
   private storage: MonkeyStorage = new MonkeyStorage();
   private exported: string[] = [];
 

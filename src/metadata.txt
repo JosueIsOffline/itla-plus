@@ -4,7 +4,7 @@
 // @version      X.Y.Z
 // @description  Suite modular de herramientas para mejorar la experiencia en la plataforma virtual del ITLA.
 // @author       JosueIsOffline
-// @match        https://plataformavirtual.itla.edu.do/*
+// @match        https://aulavirtual.itla.edu.do/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getResourceText

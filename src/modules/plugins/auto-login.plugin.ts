@@ -9,7 +9,7 @@ export class AutoLogin implements Plugin {
   private storage = new MonkeyStorage();
 
   shouldRun(): boolean {
-    return DOM.isOnPage("https://plataformavirtual.itla.edu.do/login/*");
+    return DOM.isOnPage("https://aulavirtual.itla.edu.do/login/*");
   }
 
   async init(): Promise<void> {
@@ -64,7 +64,7 @@ export class AutoLogin implements Plugin {
 
     const userInput = DOM.getInput("username");
     const passInput = DOM.getInput("password");
-    const loginBtn = DOM.getButton("Log in");
+    const loginBtn = DOM.getButton("loginbtn");
 
     if (userInput && passInput && loginBtn) {
       DOM.fillInput(userInput, user);

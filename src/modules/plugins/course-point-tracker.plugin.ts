@@ -8,7 +8,7 @@ export class CoursePointsTracker implements Plugin {
 
   shouldRun(): boolean {
     return DOM.isOnPage(
-      "https://plataformavirtual.itla.edu.do/course/view.php?id=*",
+      "https://aulavirtual.itla.edu.do/course/view.php?id=*",
     );
   }
 
@@ -20,7 +20,7 @@ export class CoursePointsTracker implements Plugin {
   private async getGrades(): Promise<number> {
     try {
       const url = await DOM.waitForElement<HTMLAnchorElement>(
-        ".list-group [data-key='grades']",
+        '[data-key="grades"] a'
       );
 
       if (!url) {
@@ -29,7 +29,6 @@ export class CoursePointsTracker implements Plugin {
       }
 
       this.url = url.href;
-
       const data = await GM.xmlHttpRequest({ url: url.href });
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.responseText, "text/html");
@@ -40,7 +39,8 @@ export class CoursePointsTracker implements Plugin {
 
       let total = 0;
       for (let grade of grades) {
-        const absoluteGrade = parseFloat(grade.innerText);
+        const gradeText = grade.innerText.trim().replace(',','.');
+        const absoluteGrade = parseFloat(gradeText);
         if (!isNaN(absoluteGrade) && absoluteGrade <= 20) {
           total += absoluteGrade;
         }
