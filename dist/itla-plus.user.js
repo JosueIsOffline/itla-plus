@@ -491,7 +491,7 @@
         }
         async getGrades() {
             try {
-                const url = await DOM.waitForElement('a[href*="grade/report"]');
+                const url = await DOM.waitForElement('[data-key="grades"] a');
                 if (!url) {
                     console.warn(`[${this.name}] No subject selected`);
                     return 0;

@@ -20,7 +20,7 @@ export class CoursePointsTracker implements Plugin {
   private async getGrades(): Promise<number> {
     try {
       const url = await DOM.waitForElement<HTMLAnchorElement>(
-        'a[href*="grade/report"]',
+        '[data-key="grades"] a'
       );
 
       if (!url) {
@@ -29,7 +29,6 @@ export class CoursePointsTracker implements Plugin {
       }
 
       this.url = url.href;
-
       const data = await GM.xmlHttpRequest({ url: url.href });
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.responseText, "text/html");
