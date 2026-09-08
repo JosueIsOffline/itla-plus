@@ -42,29 +42,46 @@ export class CoursePointsTracker implements Plugin {
         doc.querySelectorAll<HTMLTableRowElement>(".user-grade tbody tr"),
       );
 
-      // Summing individual item grades ourselves breaks down as soon as a
-      // course has weighted categories or items on different scales (0-3,
-      // 0-10, 0-100, ...). Moodle already computes the real weighted total
-      // on the "Acumulado Total" row ("courseitem"), so read that instead.
-      const totalRow = rows.find((row) =>
-        row.querySelector(".column-itemname .courseitem"),
-      );
+      // Moodle's "Acumulado Total" excludes ungraded items from the
+      // average entirely, so it can jump straight to 100% the moment the
+      // first item is graded, then swing wildly as more come in. Instead,
+      // track earned points against the total points possible across every
+      // item (graded or not), so the number only ever climbs as things get
+      // graded. Note this treats every item's raw point value as equally
+      // important, which won't always match how the teacher weighted
+      // categories, but it gives students a steady sense of progress.
+      let earned = 0;
+      let possible = 0;
 
-      if (!totalRow) {
-        console.warn(`[${this.name}] Could not find the course total row`);
+      for (const row of rows) {
+        if (!row.querySelector(".column-itemname .item")) continue;
+
+        const rangeText = row
+          .querySelector<HTMLTableCellElement>(".column-range")
+          ?.innerText.trim();
+        const maxPoints = parseFloat(
+          rangeText?.split(/[–-]/).pop()?.trim().replace(",", ".") ?? "",
+        );
+        if (isNaN(maxPoints) || maxPoints <= 0) continue;
+
+        possible += maxPoints;
+
+        const gradeText = row
+          .querySelector<HTMLTableCellElement>(".column-grade")
+          ?.innerText.trim()
+          .replace(",", ".");
+        const grade = parseFloat(gradeText ?? "");
+        if (!isNaN(grade)) {
+          earned += grade;
+        }
+      }
+
+      if (possible <= 0) {
+        console.warn(`[${this.name}] Could not find any gradable items`);
         return 0;
       }
 
-      const percentageCell = totalRow.querySelector<HTMLTableCellElement>(
-        ".column-percentage",
-      );
-      const percentageText = percentageCell?.innerText
-        .replace("%", "")
-        .trim()
-        .replace(",", ".");
-      const percentage = percentageText ? parseFloat(percentageText) : NaN;
-
-      return isNaN(percentage) ? 0 : Math.round(percentage);
+      return Math.round((earned / possible) * 100);
     } catch (err) {
       console.error(`[${this.name}] Error getting table grades`, err);
       return 0;
