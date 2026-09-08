@@ -51,7 +51,7 @@
 ============================ */
 #custom-container {
   position: fixed;
-  top: 3.5rem;
+  bottom: 2rem;
   right: 2rem;
   display: flex;
   flex-direction: column;
@@ -67,7 +67,7 @@
   color: #fff;
   min-width: 150px;
   text-align: center;
-  z-index: 1000;
+  z-index: 999999999;
   animation: slideIn 0.5s ease-out;
   transition: all 0.3s ease;
 }
