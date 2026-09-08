@@ -1,6 +1,5 @@
 import { TokenData } from "../../types/google";
 import { GoogleAuth, MonkeyStorage } from "../services";
-import { STORAGE_PASS, STORAGE_USER, SVG } from "../shared/constants";
 import { UI } from "./ui";
 import { UIComponent } from "./ui-component";
 
@@ -26,16 +25,6 @@ export class SettingsModal extends UIComponent {
         <button class="custom-close-button" id="closeBtn">&times;</button>
       </div>
       <div class="custom-modal-content">
-        <div class="custom-section">
-          <h3 class="custom-section-title">Opciones</h3>
-          <div class="custom-option-section">
-            <p>Borrar credenciales guardadas</p>
-            <button id="deleteBtn" class="custom-close-button custom-btn-danger">
-              ${SVG.TRASH}
-            </button>
-          </div>
-        </div>
-
         <div class="custom-section">
           <h3 class="custom-section-title">Integraciones</h3>
           <div class="custom-integration-card">
@@ -67,12 +56,6 @@ export class SettingsModal extends UIComponent {
     modalOverlay.querySelector("#closeBtn")?.addEventListener("click", () => {
       UI.unmount(this.id);
     });
-
-    modalOverlay
-      .querySelector("#deleteBtn")
-      ?.addEventListener("click", async () => {
-        await this.deleteCredentials();
-      });
 
     modalOverlay.querySelector("#connectBtn")?.addEventListener("click", () => {
       this.connectToGoogle(modalOverlay);
@@ -117,12 +100,6 @@ export class SettingsModal extends UIComponent {
       statusBadge?.classList.add("custom-hidden");
       newBadge?.classList.remove("custom-hidden");
     }
-  }
-
-  private async deleteCredentials(): Promise<void> {
-    await this.storage.set(STORAGE_USER, null);
-    await this.storage.set(STORAGE_PASS, null);
-    alert("Credenciales borradas. Recarga la página para ingresar nuevas.");
   }
 
   private connectToGoogle(root: HTMLElement): void {

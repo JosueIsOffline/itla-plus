@@ -5,6 +5,7 @@
 // @description  Suite modular de herramientas para mejorar la experiencia en la plataforma virtual del ITLA.
 // @author       JosueIsOffline
 // @match        https://aulavirtual.itla.edu.do/*
+// @match        https://virtual.itsc.edu.do/*
 // @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getResourceText
@@ -12,7 +13,6 @@
 // @grant        GM_setValue
 // @grant        GM_addStyle
 // @connect      raw.githubusercontent.com
-// @require      https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js
 // @resource     INTERNAL_CSS https://raw.githubusercontent.com/JosueIsOffline/itla-plus/main/src/styles.css
 // @updateURL    https://github.com/JosueIsOffline/itla-plus/releases/latest/download/itla-plus.user.js
 // @downloadURL  https://github.com/JosueIsOffline/itla-plus/releases/latest/download/itla-plus.user.js
@@ -22,19 +22,6 @@
 
 (function () {
     'use strict';
-
-    class Crypto {
-        static encrypt(text, key) {
-            return CryptoJS.AES.encrypt(text, key).toString();
-        }
-        static decrypt(ciphertext, key) {
-            const bytes = CryptoJS.AES.decrypt(ciphertext, key);
-            return bytes.toString(CryptoJS.enc.Utf8);
-        }
-        static hash(text) {
-            return CryptoJS.SHA256(text).toString();
-        }
-    }
 
     class DOM {
         static async waitForElement(selector, timeout = 5000) {
@@ -217,97 +204,7 @@
         }
     }
 
-    const STORAGE_USER = "itlaUser";
-    const STORAGE_PASS = "itlaPass";
     const WORKER_URL = "https://google-auth.itla-plus.workers.dev";
-    const SVG = {
-        TRASH: `<svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24">
-	<g fill="none" stroke="#df0b0b" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-		<path stroke-dasharray="24" stroke-dashoffset="24" d="M12 20h5c0.5 0 1 -0.5 1 -1v-14M12 20h-5c-0.5 0 -1 -0.5 -1 -1v-14">
-			<animate fill="freeze" attributeName="stroke-dashoffset" dur="0.4s" values="24;0" />
-		</path>
-		<path stroke-dasharray="20" stroke-dashoffset="20" d="M4 5h16">
-			<animate fill="freeze" attributeName="stroke-dashoffset" begin="0.4s" dur="0.2s" values="20;0" />
-		</path>
-		<path stroke-dasharray="8" stroke-dashoffset="8" d="M10 4h4M10 9v7M14 9v7">
-			<animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="8;0" />
-		</path>
-	</g>
-</svg>`,
-    };
-
-    async function getOrCreateKey() {
-        const storage = new MonkeyStorage();
-        let encryptionKey = await storage.get("encryptionKey");
-        if (!encryptionKey) {
-            let deviceFingerPrint = navigator.userAgent + navigator.language + screen.width + screen.height;
-            encryptionKey = Crypto.hash(deviceFingerPrint);
-            await storage.set("encryptionKey", encryptionKey);
-            return encryptionKey;
-        }
-        return encryptionKey;
-    }
-
-    class AutoLogin {
-        name = "AutoLogin";
-        storage = new MonkeyStorage();
-        shouldRun() {
-            return DOM.isOnPage("https://aulavirtual.itla.edu.do/login/*");
-        }
-        async init() {
-            const creds = await this.asycAskCredentials();
-            if (creds) {
-                this.login(creds);
-            }
-        }
-        async asycAskCredentials() {
-            let user = await this.storage.get(STORAGE_USER);
-            let pass = await this.storage.get(STORAGE_PASS);
-            const ENCRYPTION_KEY = await getOrCreateKey();
-            if (user && pass) {
-                user = Crypto.decrypt(user, ENCRYPTION_KEY);
-                pass = Crypto.decrypt(pass, ENCRYPTION_KEY);
-                if (!user || !pass || user.length < 8) {
-                    user = null;
-                    pass = null;
-                }
-            }
-            if (!user || !pass) {
-                user = prompt("Ingresa tu matrícula del ITLA:");
-                pass = prompt("Ingresa tu contraseña:");
-                if (user && pass) {
-                    const encryptedUser = Crypto.encrypt(user, ENCRYPTION_KEY);
-                    const encryptedPass = Crypto.encrypt(pass, ENCRYPTION_KEY);
-                    await this.storage.set(STORAGE_USER, encryptedUser);
-                    await this.storage.set(STORAGE_PASS, encryptedPass);
-                }
-                else {
-                    alert("Debes ingresar ambos campos. Recarga para intentar de nuevo.");
-                    return null;
-                }
-            }
-            return {
-                user,
-                pass,
-            };
-        }
-        login({ user, pass }) {
-            if (!user || !pass) {
-                console.error("Username or password wans't provide");
-                return;
-            }
-            const userInput = DOM.getInput("username");
-            const passInput = DOM.getInput("password");
-            const loginBtn = DOM.getButton("loginbtn");
-            if (userInput && passInput && loginBtn) {
-                DOM.fillInput(userInput, user);
-                DOM.fillInput(passInput, pass);
-                setTimeout(() => {
-                    loginBtn.click();
-                }, 200);
-            }
-        }
-    }
 
     class ExportAssignments {
         name = "ExportAssignments";
@@ -482,8 +379,12 @@
     class CoursePointsTracker {
         name = "CoursePointsTracker";
         url = "";
+        static SUPPORTED_HOSTS = [
+            "aulavirtual.itla.edu.do",
+            "virtual.itsc.edu.do",
+        ];
         shouldRun() {
-            return DOM.isOnPage("https://aulavirtual.itla.edu.do/course/view.php?id=*");
+            return CoursePointsTracker.SUPPORTED_HOSTS.some((host) => DOM.isOnPage(`https://${host}/course/view.php?id=*`));
         }
         async init() {
             const grades = await this.getGrades();
@@ -500,12 +401,20 @@
                 const data = await GM.xmlHttpRequest({ url: url.href });
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data.responseText, "text/html");
-                const grades = Array.from(doc.querySelectorAll(".user-grade .column-grade"));
+                const rows = Array.from(doc.querySelectorAll(".user-grade tbody tr"));
                 let total = 0;
-                for (let grade of grades) {
-                    const gradeText = grade.innerText.trim().replace(',', '.');
+                for (const row of rows) {
+                    // Moodle marks real gradable rows with "item"; category subtotals
+                    // ("categoryitem") and the course grand total ("courseitem") reuse
+                    // .column-grade too, so summing everything double-counts totals.
+                    if (!row.querySelector(".column-itemname .item"))
+                        continue;
+                    const gradeCell = row.querySelector(".column-grade");
+                    if (!gradeCell)
+                        continue;
+                    const gradeText = gradeCell.innerText.trim().replace(",", ".");
                     const absoluteGrade = parseFloat(gradeText);
-                    if (!isNaN(absoluteGrade) && absoluteGrade <= 20) {
+                    if (!isNaN(absoluteGrade)) {
                         total += absoluteGrade;
                     }
                 }
@@ -667,16 +576,6 @@
       </div>
       <div class="custom-modal-content">
         <div class="custom-section">
-          <h3 class="custom-section-title">Opciones</h3>
-          <div class="custom-option-section">
-            <p>Borrar credenciales guardadas</p>
-            <button id="deleteBtn" class="custom-close-button custom-btn-danger">
-              ${SVG.TRASH}
-            </button>
-          </div>
-        </div>
-
-        <div class="custom-section">
           <h3 class="custom-section-title">Integraciones</h3>
           <div class="custom-integration-card">
             <div class="custom-new-badge">
@@ -705,11 +604,6 @@
   `;
             modalOverlay.querySelector("#closeBtn")?.addEventListener("click", () => {
                 UI.unmount(this.id);
-            });
-            modalOverlay
-                .querySelector("#deleteBtn")
-                ?.addEventListener("click", async () => {
-                await this.deleteCredentials();
             });
             modalOverlay.querySelector("#connectBtn")?.addEventListener("click", () => {
                 this.connectToGoogle(modalOverlay);
@@ -748,11 +642,6 @@
                 newBadge?.classList.remove("custom-hidden");
             }
         }
-        async deleteCredentials() {
-            await this.storage.set(STORAGE_USER, null);
-            await this.storage.set(STORAGE_PASS, null);
-            alert("Credenciales borradas. Recarga la página para ingresar nuevas.");
-        }
         connectToGoogle(root) {
             this.googleAuth.requestAccess();
             const handler = async (event) => {
@@ -789,11 +678,7 @@
             }, 50 * 60 * 1000);
         }
         const core = new Core();
-        core.register([
-            new AutoLogin(),
-            new CoursePointsTracker(),
-            new ExportAssignments(token),
-        ]);
+        core.register([new CoursePointsTracker(), new ExportAssignments(token)]);
         await core.init();
     })();
 

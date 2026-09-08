@@ -6,9 +6,14 @@ export class CoursePointsTracker implements Plugin {
   name = "CoursePointsTracker";
   private url: string = "";
 
+  private static readonly SUPPORTED_HOSTS = [
+    "aulavirtual.itla.edu.do",
+    "virtual.itsc.edu.do",
+  ];
+
   shouldRun(): boolean {
-    return DOM.isOnPage(
-      "https://aulavirtual.itla.edu.do/course/view.php?id=*",
+    return CoursePointsTracker.SUPPORTED_HOSTS.some((host) =>
+      DOM.isOnPage(`https://${host}/course/view.php?id=*`),
     );
   }
 
@@ -33,15 +38,24 @@ export class CoursePointsTracker implements Plugin {
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.responseText, "text/html");
 
-      const grades = Array.from(
-        doc.querySelectorAll<HTMLTableCellElement>(".user-grade .column-grade"),
+      const rows = Array.from(
+        doc.querySelectorAll<HTMLTableRowElement>(".user-grade tbody tr"),
       );
 
       let total = 0;
-      for (let grade of grades) {
-        const gradeText = grade.innerText.trim().replace(',','.');
+      for (const row of rows) {
+        // Moodle marks real gradable rows with "item"; category subtotals
+        // ("categoryitem") and the course grand total ("courseitem") reuse
+        // .column-grade too, so summing everything double-counts totals.
+        if (!row.querySelector(".column-itemname .item")) continue;
+
+        const gradeCell = row.querySelector<HTMLTableCellElement>(".column-grade");
+        if (!gradeCell) continue;
+
+        const gradeText = gradeCell.innerText.trim().replace(",", ".");
         const absoluteGrade = parseFloat(gradeText);
-        if (!isNaN(absoluteGrade) && absoluteGrade <= 20) {
+
+        if (!isNaN(absoluteGrade)) {
           total += absoluteGrade;
         }
       }

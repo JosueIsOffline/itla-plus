@@ -2,18 +2,11 @@ import { GoogleAuth, MonkeyStorage } from "./modules/services";
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_SCOPE,
-  STORAGE_PASS,
-  STORAGE_USER,
   WORKER_URL,
 } from "./modules/shared/constants";
-import {
-  AutoLogin,
-  CoursePointsTracker,
-  ExportAssignments,
-} from "./modules/plugins";
+import { CoursePointsTracker, ExportAssignments } from "./modules/plugins";
 import { Core } from "./core/core";
-import { openSettingsModal, UI } from "./modules/components";
-import { SettingsModal } from "./modules/components/settings-modal";
+import { SettingsModal, UI } from "./modules/components";
 
 const mStorage = new MonkeyStorage();
 const auth = new GoogleAuth(WORKER_URL);
@@ -43,11 +36,7 @@ GM_registerMenuCommand("⚙️ Configuración ITLA Plus", () => {
   }
 
   const core = new Core();
-  core.register([
-    new AutoLogin(),
-    new CoursePointsTracker(),
-    new ExportAssignments(token),
-  ]);
+  core.register([new CoursePointsTracker(), new ExportAssignments(token)]);
 
   await core.init();
 })();
