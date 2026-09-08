@@ -51,7 +51,7 @@
 ============================ */
 #custom-container {
   position: fixed;
-  bottom: 6rem;
+  top: 3.5rem;
   right: 2rem;
   display: flex;
   flex-direction: column;
