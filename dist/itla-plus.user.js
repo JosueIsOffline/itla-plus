@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         ITLA Plus Dev
+// @name         ITLA Plus
 // @namespace    https://github.com/JosueIsOffline
 // @version      1.3.1
 // @description  Suite modular de herramientas para mejorar la experiencia en la plataforma virtual del ITLA.
