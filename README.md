@@ -10,25 +10,12 @@ Suite modular de herramientas para mejorar la experiencia en la plataforma virtu
 ## Características Principales
 
 - **Arquitectura modular**: Cada funcionalidad se implementa como un plugin independiente
-- **Encriptación robusta**: Almacenamiento seguro de credenciales con AES-256
 - **Actualizaciones automáticas**: Recibe mejoras sin intervención manual
-- **Clave única por dispositivo**: Generada mediante fingerprint del navegador
 - **100% local**: Sin conexiones externas, todo procesa en tu dispositivo
 - **Máxima compatibilidad**: Tampermonkey, Greasemonkey y Violentmonkey
 
 
 ## Plugins Disponibles
-
-### 🔐 AutoLogin
-
-Automatiza el proceso de inicio de sesión en la plataforma virtual.
-
-**Características:**
-
-- Almacenamiento cifrado de matrícula y contraseña
-- Autenticación automática en visitas posteriores
-- Gestión sencilla de credenciales desde el menú
-- Eliminación segura de datos almacenados
 
 ### 📊 Points Tracker
 
@@ -68,10 +55,8 @@ src/
 │   └── core.ts                # Ciclo de vida y hooks
 ├── modules/
 │   ├── plugins/
-│   │   ├── AutoLogin.plugin.ts       # Plugin de autenticación
 │   │   └── PointsTracker.plugin.ts   # Plugin de calificaciones
 │   ├── services/
-│   │   ├── Crypto.ts          # Servicio de encriptación
 │   │   ├── MonkeyStorage.ts   # Gestión de almacenamiento
 │   │   └── DOM.ts             # Manipulación del DOM
 │   ├── utils/
@@ -133,21 +118,13 @@ El script está configurado para recibir actualizaciones automáticas. Tampermon
 
 ## Uso
 
-**Primera ejecución:**
-
-- AutoLogin solicitará tu matrícula y contraseña (se guardan cifradas localmente)
-
-**Siguientes visitas:**
-
-- Acceso automático sin necesidad de introducir credenciales
+- Inicia sesión normalmente con tu cuenta institucional (Microsoft)
 - Points Tracker mostrará tu acumulado al entrar en cada curso
 
 ## 🔒 Seguridad y Privacidad
 
 | Aspecto                 | Detalles                                                           |
 | ----------------------- | ------------------------------------------------------------------ |
-| **Encriptación**        | AES-256 mediante CryptoJS                                          |
-| **Clave de cifrado**    | Generada con fingerprint único del navegador                       |
 | **Almacenamiento**      | Solo en el storage de Tampermonkey (sin sincronización en la nube) |
 | **Conexiones externas** | Ninguna. Todo procesa localmente                                   |
 | **Rastreo**             | No se recopilan datos de uso                                       |
@@ -155,8 +132,6 @@ El script está configurado para recibir actualizaciones automáticas. Tampermon
 **Recomendaciones de seguridad:**
 
 - Usa el script solo en dispositivos personales de confianza
-- Si cambias de dispositivo, elimina las credenciales guardadas desde Tampermonkey
-- No compartas tu dispositivo si tienes credenciales almacenadas
 
 ## Contribuir
 
