@@ -42,25 +42,29 @@ export class CoursePointsTracker implements Plugin {
         doc.querySelectorAll<HTMLTableRowElement>(".user-grade tbody tr"),
       );
 
-      let total = 0;
-      for (const row of rows) {
-        // Moodle marks real gradable rows with "item"; category subtotals
-        // ("categoryitem") and the course grand total ("courseitem") reuse
-        // .column-grade too, so summing everything double-counts totals.
-        if (!row.querySelector(".column-itemname .item")) continue;
+      // Summing individual item grades ourselves breaks down as soon as a
+      // course has weighted categories or items on different scales (0-3,
+      // 0-10, 0-100, ...). Moodle already computes the real weighted total
+      // on the "Acumulado Total" row ("courseitem"), so read that instead.
+      const totalRow = rows.find((row) =>
+        row.querySelector(".column-itemname .courseitem"),
+      );
 
-        const gradeCell = row.querySelector<HTMLTableCellElement>(".column-grade");
-        if (!gradeCell) continue;
-
-        const gradeText = gradeCell.innerText.trim().replace(",", ".");
-        const absoluteGrade = parseFloat(gradeText);
-
-        if (!isNaN(absoluteGrade)) {
-          total += absoluteGrade;
-        }
+      if (!totalRow) {
+        console.warn(`[${this.name}] Could not find the course total row`);
+        return 0;
       }
 
-      return Math.round(total);
+      const percentageCell = totalRow.querySelector<HTMLTableCellElement>(
+        ".column-percentage",
+      );
+      const percentageText = percentageCell?.innerText
+        .replace("%", "")
+        .trim()
+        .replace(",", ".");
+      const percentage = percentageText ? parseFloat(percentageText) : NaN;
+
+      return isNaN(percentage) ? 0 : Math.round(percentage);
     } catch (err) {
       console.error(`[${this.name}] Error getting table grades`, err);
       return 0;
