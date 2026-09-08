@@ -42,16 +42,16 @@ export class CoursePointsTracker implements Plugin {
         doc.querySelectorAll<HTMLTableRowElement>(".user-grade tbody tr"),
       );
 
-      // Moodle's "Acumulado Total" excludes ungraded items from the
-      // average entirely, so it can jump straight to 100% the moment the
-      // first item is graded, then swing wildly as more come in. Instead,
-      // track earned points against the total points possible across every
-      // item (graded or not), so the number only ever climbs as things get
-      // graded. Note this treats every item's raw point value as equally
-      // important, which won't always match how the teacher weighted
-      // categories, but it gives students a steady sense of progress.
-      let earned = 0;
-      let possible = 0;
+      // Weighting by raw point value lets a single high-max item (e.g. an
+      // attendance activity scored 0-100) dominate the total, even when
+      // it's meant to count for far less of the final grade than a 0-3
+      // assignment. Average each item's own percentage instead, so every
+      // activity counts the same regardless of its point scale. Ungraded
+      // items count as 0%, so the average only climbs as things get
+      // graded, instead of jumping around like Moodle's live weighted
+      // total does while most of the course is still ungraded.
+      let percentageSum = 0;
+      let itemCount = 0;
 
       for (const row of rows) {
         if (!row.querySelector(".column-itemname .item")) continue;
@@ -64,7 +64,7 @@ export class CoursePointsTracker implements Plugin {
         );
         if (isNaN(maxPoints) || maxPoints <= 0) continue;
 
-        possible += maxPoints;
+        itemCount += 1;
 
         const gradeText = row
           .querySelector<HTMLTableCellElement>(".column-grade")
@@ -72,16 +72,16 @@ export class CoursePointsTracker implements Plugin {
           .replace(",", ".");
         const grade = parseFloat(gradeText ?? "");
         if (!isNaN(grade)) {
-          earned += grade;
+          percentageSum += (grade / maxPoints) * 100;
         }
       }
 
-      if (possible <= 0) {
+      if (itemCount <= 0) {
         console.warn(`[${this.name}] Could not find any gradable items`);
         return 0;
       }
 
-      return Math.round((earned / possible) * 100);
+      return Math.round(percentageSum / itemCount);
     } catch (err) {
       console.error(`[${this.name}] Error getting table grades`, err);
       return 0;
