@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ITLA Plus Dev
 // @namespace    https://github.com/JosueIsOffline
-// @version      1.2.0-beta
+// @version      1.3.0
 // @description  Suite modular de herramientas para mejorar la experiencia en la plataforma virtual del ITLA.
 // @author       JosueIsOffline
 // @match        https://aulavirtual.itla.edu.do/*
