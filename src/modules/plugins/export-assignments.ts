@@ -1,12 +1,12 @@
 import { Plugin } from "../../core/plugin";
 import { Assignment } from "../../types/assingment";
-import { DOM, MonkeyStorage } from "../services";
+import { MonkeyStorage } from "../services";
+import { SUPPORTED_HOSTS } from "../shared/constants";
 
 export class ExportAssignments implements Plugin {
   name = "ExportAssignments";
   private token: string | null;
-  private url: string =
-    "https://aulavirtual.itla.edu.do/calendar/view.php?view=upcoming";
+  private url: string = `https://${window.location.host}/calendar/view.php?view=upcoming`;
   private storage: MonkeyStorage = new MonkeyStorage();
   private exported: string[] = [];
 
@@ -15,7 +15,7 @@ export class ExportAssignments implements Plugin {
   }
 
   shouldRun(): boolean {
-    return !!this.token && DOM.isOnPage();
+    return !!this.token && SUPPORTED_HOSTS.includes(window.location.host);
   }
 
   async init(): Promise<void> {
@@ -27,15 +27,18 @@ export class ExportAssignments implements Plugin {
     }
 
     const assignments = await this.getAssignments();
+    console.log(`[${this.name}] ${assignments.length} assignment(s) found`);
 
     let countEvents = 0;
     for (const a of assignments) {
       if (!(await this.isAlreadyExported(a.id!))) {
         const event = this.mapAssignmentToEvent(a);
         if (event) {
-          await this.createCalendarEvent(this.token, event);
-          await this.markAsExported(a.id!);
-          countEvents++;
+          const created = await this.createCalendarEvent(this.token, event);
+          if (created) {
+            await this.markAsExported(a.id!);
+            countEvents++;
+          }
         }
       }
     }
@@ -105,7 +108,11 @@ export class ExportAssignments implements Plugin {
 
   private async getAssignments(): Promise<Assignment[]> {
     try {
-      const data = await GM.xmlHttpRequest({ method: "GET", url: this.url });
+      const data = await GM.xmlHttpRequest({
+        method: "GET",
+        url: this.url,
+        timeout: 15000,
+      });
       const parse = new DOMParser();
       const doc = parse.parseFromString(data.responseText, "text/html");
 
@@ -189,7 +196,10 @@ export class ExportAssignments implements Plugin {
     };
   }
 
-  private async createCalendarEvent(token: string, event: any) {
+  private async createCalendarEvent(
+    token: string,
+    event: any,
+  ): Promise<boolean> {
     const calendarId = await this.getOrCreateCalendar(token);
     const res = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
@@ -206,12 +216,15 @@ export class ExportAssignments implements Plugin {
     if (!res.ok) {
       const error = await res.json();
       if (error.error?.code === 409) {
-        console.log(`[${this.name}] Duplicate event, already exist.`);
+        console.log(`[${this.name}] Duplicate event, already exists.`);
+        return true;
       }
       console.error(`[${this.name}] Error creating event:`, error);
-    } else {
-      console.log(`[${this.name}] Events created:`, await res.json());
+      return false;
     }
+
+    console.log(`[${this.name}] Event created:`, await res.json());
+    return true;
   }
 
   private async isAlreadyExported(id: string): Promise<boolean> {

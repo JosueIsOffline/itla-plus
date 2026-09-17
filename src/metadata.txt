@@ -12,6 +12,11 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addStyle
+// @grant        GM.xmlHttpRequest
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.deleteValue
+// @grant        GM.listValues
 // @connect      raw.githubusercontent.com
 // @resource     INTERNAL_CSS https://raw.githubusercontent.com/JosueIsOffline/itla-plus/main/src/styles.css
 // @updateURL    https://github.com/JosueIsOffline/itla-plus/releases/latest/download/itla-plus.user.js

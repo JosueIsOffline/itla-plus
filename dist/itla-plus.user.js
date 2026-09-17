@@ -12,6 +12,11 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addStyle
+// @grant        GM.xmlHttpRequest
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.deleteValue
+// @grant        GM.listValues
 // @connect      raw.githubusercontent.com
 // @resource     INTERNAL_CSS https://raw.githubusercontent.com/JosueIsOffline/itla-plus/main/src/styles.css
 // @updateURL    https://github.com/JosueIsOffline/itla-plus/releases/latest/download/itla-plus.user.js
@@ -181,6 +186,9 @@
         requestAccess() {
             window.open(`${this.workerUrl}/auth/start`, "LoginGoogle");
         }
+        async saveTokenFromAuthMessage(data) {
+            await this.saveToken(data.access_token, data.expires_in);
+        }
         async refreshToken() {
             try {
                 const res = await fetch(`${this.workerUrl}/refresh`);
@@ -205,18 +213,19 @@
     }
 
     const WORKER_URL = "https://google-auth.itla-plus.workers.dev";
+    const SUPPORTED_HOSTS = ["aulavirtual.itla.edu.do", "virtual.itsc.edu.do"];
 
     class ExportAssignments {
         name = "ExportAssignments";
         token;
-        url = "https://aulavirtual.itla.edu.do/calendar/view.php?view=upcoming";
+        url = `https://${window.location.host}/calendar/view.php?view=upcoming`;
         storage = new MonkeyStorage();
         exported = [];
         constructor(token) {
             this.token = token;
         }
         shouldRun() {
-            return !!this.token && DOM.isOnPage();
+            return !!this.token && SUPPORTED_HOSTS.includes(window.location.host);
         }
         async init() {
             if (!this.token) {
@@ -224,14 +233,17 @@
                 return;
             }
             const assignments = await this.getAssignments();
+            console.log(`[${this.name}] ${assignments.length} assignment(s) found`);
             let countEvents = 0;
             for (const a of assignments) {
                 if (!(await this.isAlreadyExported(a.id))) {
                     const event = this.mapAssignmentToEvent(a);
                     if (event) {
-                        await this.createCalendarEvent(this.token, event);
-                        await this.markAsExported(a.id);
-                        countEvents++;
+                        const created = await this.createCalendarEvent(this.token, event);
+                        if (created) {
+                            await this.markAsExported(a.id);
+                            countEvents++;
+                        }
                     }
                 }
             }
@@ -279,7 +291,11 @@
         }
         async getAssignments() {
             try {
-                const data = await GM.xmlHttpRequest({ method: "GET", url: this.url });
+                const data = await GM.xmlHttpRequest({
+                    method: "GET",
+                    url: this.url,
+                    timeout: 15000,
+                });
                 const parse = new DOMParser();
                 const doc = parse.parseFromString(data.responseText, "text/html");
                 const assignmentsList = Array.from(doc.querySelectorAll('.eventlist [data-type="event"]'));
@@ -357,13 +373,14 @@
             if (!res.ok) {
                 const error = await res.json();
                 if (error.error?.code === 409) {
-                    console.log(`[${this.name}] Duplicate event, already exist.`);
+                    console.log(`[${this.name}] Duplicate event, already exists.`);
+                    return true;
                 }
                 console.error(`[${this.name}] Error creating event:`, error);
+                return false;
             }
-            else {
-                console.log(`[${this.name}] Events created:`, await res.json());
-            }
+            console.log(`[${this.name}] Event created:`, await res.json());
+            return true;
         }
         async isAlreadyExported(id) {
             this.exported = (await this.storage.get("exportedAssignments", [])) || [];
@@ -379,12 +396,8 @@
     class CoursePointsTracker {
         name = "CoursePointsTracker";
         url = "";
-        static SUPPORTED_HOSTS = [
-            "aulavirtual.itla.edu.do",
-            "virtual.itsc.edu.do",
-        ];
         shouldRun() {
-            return CoursePointsTracker.SUPPORTED_HOSTS.some((host) => DOM.isOnPage(`https://${host}/course/view.php?id=*`));
+            return SUPPORTED_HOSTS.some((host) => DOM.isOnPage(`https://${host}/course/view.php?id=*`));
         }
         async init() {
             const grades = await this.getGrades();
@@ -663,8 +676,7 @@
             this.googleAuth.requestAccess();
             const handler = async (event) => {
                 if (event.origin.includes("workers.dev")) {
-                    const tokens = event.data;
-                    await this.storage.set("googleTokenData", tokens);
+                    await this.googleAuth.saveTokenFromAuthMessage(event.data);
                     this.toggleConnection(root, true);
                     window.removeEventListener("message", handler);
                 }
