@@ -233,14 +233,17 @@
                 return;
             }
             const assignments = await this.getAssignments();
+            console.log(`[${this.name}] ${assignments.length} assignment(s) found`);
             let countEvents = 0;
             for (const a of assignments) {
                 if (!(await this.isAlreadyExported(a.id))) {
                     const event = this.mapAssignmentToEvent(a);
                     if (event) {
-                        await this.createCalendarEvent(this.token, event);
-                        await this.markAsExported(a.id);
-                        countEvents++;
+                        const created = await this.createCalendarEvent(this.token, event);
+                        if (created) {
+                            await this.markAsExported(a.id);
+                            countEvents++;
+                        }
                     }
                 }
             }
@@ -288,7 +291,11 @@
         }
         async getAssignments() {
             try {
-                const data = await GM.xmlHttpRequest({ method: "GET", url: this.url });
+                const data = await GM.xmlHttpRequest({
+                    method: "GET",
+                    url: this.url,
+                    timeout: 15000,
+                });
                 const parse = new DOMParser();
                 const doc = parse.parseFromString(data.responseText, "text/html");
                 const assignmentsList = Array.from(doc.querySelectorAll('.eventlist [data-type="event"]'));
@@ -366,13 +373,14 @@
             if (!res.ok) {
                 const error = await res.json();
                 if (error.error?.code === 409) {
-                    console.log(`[${this.name}] Duplicate event, already exist.`);
+                    console.log(`[${this.name}] Duplicate event, already exists.`);
+                    return true;
                 }
                 console.error(`[${this.name}] Error creating event:`, error);
+                return false;
             }
-            else {
-                console.log(`[${this.name}] Events created:`, await res.json());
-            }
+            console.log(`[${this.name}] Event created:`, await res.json());
+            return true;
         }
         async isAlreadyExported(id) {
             this.exported = (await this.storage.get("exportedAssignments", [])) || [];
