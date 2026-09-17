@@ -7,7 +7,10 @@
 // @match        https://aulavirtual.itla.edu.do/*
 // @match        https://virtual.itsc.edu.do/*
 // @grant        GM_registerMenuCommand
+// @grant        GM_xmlhttpRequest
 // @grant        GM_getResourceText
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
 // @grant        GM.getValue

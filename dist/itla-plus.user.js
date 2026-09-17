@@ -12,6 +12,11 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addStyle
+// @grant        GM.xmlHttpRequest
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.deleteValue
+// @grant        GM.listValues
 // @connect      raw.githubusercontent.com
 // @resource     INTERNAL_CSS https://raw.githubusercontent.com/JosueIsOffline/itla-plus/main/src/styles.css
 // @updateURL    https://github.com/JosueIsOffline/itla-plus/releases/latest/download/itla-plus.user.js
@@ -181,6 +186,9 @@
         requestAccess() {
             window.open(`${this.workerUrl}/auth/start`, "LoginGoogle");
         }
+        async saveTokenFromAuthMessage(data) {
+            await this.saveToken(data.access_token, data.expires_in);
+        }
         async refreshToken() {
             try {
                 const res = await fetch(`${this.workerUrl}/refresh`);
@@ -205,18 +213,19 @@
     }
 
     const WORKER_URL = "https://google-auth.itla-plus.workers.dev";
+    const SUPPORTED_HOSTS = ["aulavirtual.itla.edu.do", "virtual.itsc.edu.do"];
 
     class ExportAssignments {
         name = "ExportAssignments";
         token;
-        url = "https://aulavirtual.itla.edu.do/calendar/view.php?view=upcoming";
+        url = `https://${window.location.host}/calendar/view.php?view=upcoming`;
         storage = new MonkeyStorage();
         exported = [];
         constructor(token) {
             this.token = token;
         }
         shouldRun() {
-            return !!this.token && DOM.isOnPage();
+            return !!this.token && SUPPORTED_HOSTS.includes(window.location.host);
         }
         async init() {
             if (!this.token) {
@@ -379,12 +388,8 @@
     class CoursePointsTracker {
         name = "CoursePointsTracker";
         url = "";
-        static SUPPORTED_HOSTS = [
-            "aulavirtual.itla.edu.do",
-            "virtual.itsc.edu.do",
-        ];
         shouldRun() {
-            return CoursePointsTracker.SUPPORTED_HOSTS.some((host) => DOM.isOnPage(`https://${host}/course/view.php?id=*`));
+            return SUPPORTED_HOSTS.some((host) => DOM.isOnPage(`https://${host}/course/view.php?id=*`));
         }
         async init() {
             const grades = await this.getGrades();
@@ -663,8 +668,7 @@
             this.googleAuth.requestAccess();
             const handler = async (event) => {
                 if (event.origin.includes("workers.dev")) {
-                    const tokens = event.data;
-                    await this.storage.set("googleTokenData", tokens);
+                    await this.googleAuth.saveTokenFromAuthMessage(event.data);
                     this.toggleConnection(root, true);
                     window.removeEventListener("message", handler);
                 }

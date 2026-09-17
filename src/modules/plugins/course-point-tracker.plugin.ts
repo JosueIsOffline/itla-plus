@@ -1,18 +1,14 @@
 import { Url } from "url";
 import { Plugin } from "../../core/plugin";
 import { DOM } from "../services";
+import { SUPPORTED_HOSTS } from "../shared/constants";
 
 export class CoursePointsTracker implements Plugin {
   name = "CoursePointsTracker";
   private url: string = "";
 
-  private static readonly SUPPORTED_HOSTS = [
-    "aulavirtual.itla.edu.do",
-    "virtual.itsc.edu.do",
-  ];
-
   shouldRun(): boolean {
-    return CoursePointsTracker.SUPPORTED_HOSTS.some((host) =>
+    return SUPPORTED_HOSTS.some((host) =>
       DOM.isOnPage(`https://${host}/course/view.php?id=*`),
     );
   }
