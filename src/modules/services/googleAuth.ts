@@ -36,6 +36,13 @@ export class GoogleAuth {
     window.open(`${this.workerUrl}/auth/start`, "LoginGoogle");
   }
 
+  public async saveTokenFromAuthMessage(data: {
+    access_token: string;
+    expires_in?: number;
+  }): Promise<void> {
+    await this.saveToken(data.access_token, data.expires_in);
+  }
+
   private async refreshToken(): Promise<string | null> {
     try {
       const res = await fetch(`${this.workerUrl}/refresh`);
