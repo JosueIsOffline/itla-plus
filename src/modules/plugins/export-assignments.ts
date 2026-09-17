@@ -1,12 +1,12 @@
 import { Plugin } from "../../core/plugin";
 import { Assignment } from "../../types/assingment";
-import { DOM, MonkeyStorage } from "../services";
+import { MonkeyStorage } from "../services";
+import { SUPPORTED_HOSTS } from "../shared/constants";
 
 export class ExportAssignments implements Plugin {
   name = "ExportAssignments";
   private token: string | null;
-  private url: string =
-    "https://aulavirtual.itla.edu.do/calendar/view.php?view=upcoming";
+  private url: string = `https://${window.location.host}/calendar/view.php?view=upcoming`;
   private storage: MonkeyStorage = new MonkeyStorage();
   private exported: string[] = [];
 
@@ -15,7 +15,7 @@ export class ExportAssignments implements Plugin {
   }
 
   shouldRun(): boolean {
-    return !!this.token && DOM.isOnPage();
+    return !!this.token && SUPPORTED_HOSTS.includes(window.location.host);
   }
 
   async init(): Promise<void> {
