@@ -106,8 +106,7 @@ export class SettingsModal extends UIComponent {
     this.googleAuth.requestAccess();
     const handler = async (event: MessageEvent) => {
       if (event.origin.includes("workers.dev")) {
-        const tokens = event.data;
-        await this.storage.set("googleTokenData", tokens);
+        await this.googleAuth.saveTokenFromAuthMessage(event.data);
         this.toggleConnection(root, true);
         window.removeEventListener("message", handler);
       }
